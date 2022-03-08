@@ -5,24 +5,18 @@ import * as _ from "lodash";
 // import Moment from 'react-moment';
 import moment from "moment";
 // import map from "./earth-dark.jpg";
-import map from "./earthmap1k.jpg";
+import map from "./assets/earthmap1k.jpeg";
+import mapClear from "./earth_no_cloud.jpeg";
 import mapDark from "./earth-dark.jpg";
-import bumpMap from "./earthbump1k.jpg";
-
+import bumpMap from "./assets/earthbump.jpeg";
+import bumpMap2 from "./earthbump1k.jpg";
+import cloudsImg from "./assets/earthCloud.png";
 
 // import gsap from "gsap";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { DragControls } from "three/examples/jsm/controls/DragControls";
-import { shuffle, isWinningCombination } from "./helper/helper";
-import { rubik_colors, color_opt_array } from "./cubes/colors";
-import {
-  getDraggableIntersectionsOfSelectedSq,
-  getAvailableSqByDirection,
-} from "./helper/intersects";
-import portdata from "./Drew.json";
-
-// import { generateGameboardCubes, generateMasterCubes } from './cubes/gameboard';
-// import { generateMasterCubeDisplay } from './controls/controls';
+import vesselData from "./vesselLegs.json";
+import portData from "./ports.json";
 
 import lFragment from "./utils/shader/line_fragment.glsl";
 import lVertex from "./utils/shader/line_vertex.glsl";
@@ -46,6 +40,8 @@ let controls;
 let cubes = [];
 let globeGroup;
 let materialShader;
+let globe;
+let clouds;
 // let setInervalTimer;
 
 let masterGameMap = new Map();
@@ -125,32 +121,14 @@ class Globe extends Component {
     });
   };
 
-  generateGridHelper = () => {
-    var standardPlaneNormal = new THREE.Vector3(0, 0, 1);
-    var GridHelperPlaneNormal = new THREE.Vector3(0, 1, 0);
-    var GridHelperPlaneMaster = new THREE.Vector3(0, 1, 0);
-
-    var quaternion = new THREE.Quaternion();
-    quaternion.setFromUnitVectors(standardPlaneNormal, GridHelperPlaneNormal);
-
-    var masterQuaternion = new THREE.Quaternion();
-    masterQuaternion.setFromUnitVectors(
-      standardPlaneNormal,
-      GridHelperPlaneMaster
-    );
-
-    var largeGridGuide = new THREE.GridHelper(10, 10);
-    largeGridGuide.rotation.setFromQuaternion(quaternion);
-
-    scene.add(largeGridGuide);
-  };
-
   animation = (_time) => {
     if (this.materialShader) {
       this.materialShader.uniforms.time = _time;
     }
 
-//     globeGroup.rotation.y -= 0.015
+    clouds.rotation.y -= 0.003;
+    globeGroup.rotation.y -= 0.001;
+    //     scene.quaternion.slerp(targetQuaternion,0.01); //t = normalized value 0 to 1
 
     cubes.forEach((o) => {
       o.userData.update(o);
@@ -160,36 +138,24 @@ class Globe extends Component {
     renderer.render(scene, camera);
   };
 
-//   calcPosFromLatLonRadN = (lat, lon, radius) => {
-//     const phi = lat * (Math.PI / 180);
-//     const theta = -lon * (Math.PI / 180);
+  calcPosFromLatLonRadN = (lat, lon, radius) => {
+    // var phi   = (90-lat)*(Math.PI/180);
+    // var theta = (lon)*(Math.PI/180);
 
-//     var x = radius * Math.cos(phi) * Math.cos(theta);
-//     var y = radius * Math.cos(phi) * Math.sin(theta);
-//     var z = radius * Math.sin(phi);
-//     return { x, y, z };
-//   };
+    // const x = -(radius * Math.sin(phi)*Math.cos(theta));
+    // const z = (radius * Math.sin(phi)*Math.sin(theta));
+    // const y = (radius * Math.cos(phi));
 
-  calcPosFromLatLonRadN = (lat,lon,radius) => {
-  
-        // var phi   = (90-lat)*(Math.PI/180);
-        // var theta = (lon)*(Math.PI/180);
-    
-        // const x = -(radius * Math.sin(phi)*Math.cos(theta));
-        // const z = (radius * Math.sin(phi)*Math.sin(theta));
-        // const y = (radius * Math.cos(phi));
-      
-        // return { x, y, z };
+    // return { x, y, z };
 
-        const phi = lat * (Math.PI / 180);
-        const theta = -lon * (Math.PI / 180);
-    
-        var x = radius * Math.cos(phi) * Math.cos(theta);
-        var y = radius * Math.cos(phi) * Math.sin(theta);
-        var z = radius * Math.sin(phi);
-        return { x, y, z };
-    
-    }
+    const phi = lat * (Math.PI / 180);
+    const theta = -lon * (Math.PI / 180);
+
+    var x = radius * Math.cos(phi) * Math.cos(theta);
+    var y = radius * Math.cos(phi) * Math.sin(theta);
+    var z = radius * Math.sin(phi);
+    return { x, y, z };
+  };
 
   vertexShader = () => {
     return `
@@ -224,18 +190,23 @@ class Globe extends Component {
     camera = new THREE.PerspectiveCamera(
       90,
       window.innerWidth / window.innerHeight,
-      0.01,
-      100
+      0.000001,
+      10000
     );
     camera.position.z = 2;
-//     globeGroup.rotateY(180)
-//     globeGroup.rotateX(-5)
+    //     camera.rotateX(-30)
+
+    globeGroup.rotateY(-120);
+    globeGroup.rotateZ(-0.5);
     scene = new THREE.Scene();
-//     alpha: true 
-    renderer = new THREE.WebGLRenderer({ antialias: true});
+    //     alpha: true
+
+    // scene.rotation.y += 0.180;
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setClearColor(0x000000, 0); // the default
     renderer.setSize(window.innerWidth, window.innerHeight);
-//     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+    console.log("window.devicePixelRatio => ", window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio); //Math.min(window.devicePixelRatio, 1));
     renderer.setAnimationLoop(this.animation);
 
     controls = new OrbitControls(camera, appEl);
@@ -277,53 +248,52 @@ class Globe extends Component {
 
     // setup Map
 
-//     const axesHelper = new THREE.AxesHelper(5);
-//     scene.add(axesHelper);
+    //     const axesHelper = new THREE.AxesHelper(5);
+    //     scene.add(axesHelper);
 
-    const globeGeo = new THREE.SphereBufferGeometry(globeRadius, 72, 72);
+    const globeGeo = new THREE.SphereBufferGeometry(globeRadius, 32, 32);
 
-//     uniform mat4 projectionMatrix;
-//         uniform mat4 viewMatrix;
-//         uniform mat4 modelMatrix;
-// attribute vec3 position;
+    //     uniform mat4 projectionMatrix;
+    //         uniform mat4 viewMatrix;
+    //         uniform mat4 modelMatrix;
+    // attribute vec3 position;
     //     attribute vec2 vUv;
     //     uniform smapler2D globeTexture;
 
-//     precision mediump float;
+    //     precision mediump float;
 
-//     const material = new THREE.ShaderMaterial({
+    //     const material = new THREE.ShaderMaterial({
 
-//       vertexShader: `
-//         varying vec2 vUv;
+    //       vertexShader: `
+    //         varying vec2 vUv;
 
-//         void main()
-//         {
-//                 vUv = uv;
-//                 gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-//         }`,
-//       fragmentShader: `
-//         uniform sampler2D globeTexture;
+    //         void main()
+    //         {
+    //                 vUv = uv;
+    //                 gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+    //         }`,
+    //       fragmentShader: `
+    //         uniform sampler2D globeTexture;
 
-//         varying vec2 vUv;
+    //         varying vec2 vUv;
 
-//         void main() {
-//             gl_FragColor = vec4(texture2D(globeTexture, vUv).xyz, .9);
-//         }`,
-//       uniforms: {
-//         globalTexture: {
-//           value: new THREE.TextureLoader().load(map),
-//         },
-//       },
-//     });
+    //         void main() {
+    //             gl_FragColor = vec4(texture2D(globeTexture, vUv).xyz, .9);
+    //         }`,
+    //       uniforms: {
+    //         globalTexture: {
+    //           value: new THREE.TextureLoader().load(map),
+    //         },
+    //       },
+    //     });
 
-//     material.uniforms.globalTexture.value = new THREE.TextureLoader().load(map);
+    //     material.uniforms.globalTexture.value = new THREE.TextureLoader().load(map);
 
-//     uniforms: {
-//         globalTexture: {
-//           value: new THREE.TextureLoader().load(map),
-//         },
-//       },
-
+    //     uniforms: {
+    //         globalTexture: {
+    //           value: new THREE.TextureLoader().load(map),
+    //         },
+    //       },
 
     //  vUv = uv;
     //       uniform mat4 projectionMatrix;
@@ -334,31 +304,62 @@ class Globe extends Component {
 
     //       precision mediump float;
 
-    //       ./earth-dark.jpg
-        const material = new THREE.MeshPhongMaterial({
-          roughness: .5,
-          metalness: 1,
-          map: new THREE.TextureLoader().load(map),
-          bumpMap: new THREE.TextureLoader().load(bumpMap),
-          bumpScale:   0.05,
-        });
+    //       ./earth-dark.jpg\\
 
+    //     import mapClear from "./earth_no_cloud.jpeg";
+    // import mapDark from "./earth-dark.jpg";
+    // import bumpMap from "./assets/earthbump.jpeg";
+    // import bumpMap2 from "./earthbump1k.jpg";
+    // import clouds from "./earthcloudmap.jpg";
 
-        // const globeMesh = new THREE.Mesh(globeGeo,material )
-        // map: new THREE.TextureLoader().load(map),
-        //   displacementMap: new THREE.TextureLoader().load(bumpMap),
+    const cloudGeometry = new THREE.SphereBufferGeometry(
+      globeRadius + 0.01,
+      32,
+      32
+    );
+    const cloudTexture = new THREE.TextureLoader().load(cloudsImg);
 
-    const globe = new THREE.Mesh(globeGeo, material);
+    const mapTexture = new THREE.TextureLoader().load(mapClear);
+    //     mapTexture.anisotropy = renderer.getMaxAnisotropy();
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2)
+    const bumpTexture = new THREE.TextureLoader().load(bumpMap);
+    //     bumpTexture.anisotropy = renderer.getMaxAnisotropy();
+
+    const material = new THREE.MeshPhongMaterial({
+      roughness: 0.5,
+      metalness: 1,
+      map: mapTexture,
+      bumpMap: bumpTexture,
+      bumpScale: 0.08,
+      displacementMap: new THREE.TextureLoader().load(
+        "./assets/specularmap.jpeg"
+      ),
+    });
+
+    material.bumpMap.needsUpdate = true;
+    material.needsUpdate = true;
+
+    const cloudMaterial = new THREE.MeshPhongMaterial({
+      transparent: true,
+      map: cloudTexture,
+    });
+
+    // const globeMesh = new THREE.Mesh(globeGeo,material )
+    // map: new THREE.TextureLoader().load(map),
+    //   displacementMap: new THREE.TextureLoader().load(bumpMap),
+
+    globe = new THREE.Mesh(globeGeo, material);
+
+    clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 1);
+    const pointLight = new THREE.PointLight(0xffffff, 0.5);
     pointLight.position.set(5, 3, 5);
     scene.add(pointLight);
 
-
-    const pointLight2 = new THREE.PointLight(0xffffff, 1);
+    const pointLight2 = new THREE.PointLight(0xffffff, 0.8);
     pointLight2.position.set(-5, 3, -5);
     scene.add(pointLight2);
     //     const atl = [33.749, -84];
@@ -380,6 +381,7 @@ class Globe extends Component {
     //     chiMesh.position.set(chiV.x, chiV.z, chiV.y);
     //     globeGroup.add(chiMesh);
     globeGroup.add(globe);
+    globeGroup.add(clouds);
 
     // Atl
     let point1 = {
@@ -407,7 +409,7 @@ class Globe extends Component {
 
     let flight = [point1, point2, point3, point4];
 
-    console.log("portdata ==> ", portdata);
+    console.log("vesselData ==> ", vesselData);
 
     const colorArray = [
       "#15bece",
@@ -419,17 +421,18 @@ class Globe extends Component {
       "#d62827",
       "#2da02b",
       "#ff7f0f",
-      "#000000",
+      "#FFFFFF",
     ];
     let count = 0;
 
-    for (const port of portdata) {
-      //     const port = portdata[i];
-//       console.log("port _ ", port);
+    for (const port of vesselData) {
+      //     const port = vesselData[i];
+      //       console.log("port _ ", port);
 
       const paths = JSON.parse(port.path);
       //       console.log("paths ==> ", paths);
 
+      //       if(count < 1){
       for (const path of paths) {
         var color = new THREE.Color(colorArray[count]); // "FFA6A6" won't work!
         color.getHex(); // 0xFFA6A6
@@ -441,8 +444,10 @@ class Globe extends Component {
         );
         let pos = this.calcPosFromLatLonRadN(path.LAT, path.LON, globeRadius);
         mesh.position.set(pos.x, pos.z, pos.y);
-        scene.add(mesh);
+        // scene.add(mesh);
+        globeGroup.add(mesh);
       }
+      // }
       //         let pos = this.calcPosFromLatLonRadN(
       //         flight[i].lat,
       //         flight[i].lng,
@@ -532,6 +537,14 @@ class Globe extends Component {
     const mesh = new THREE.Mesh(geometry, material);
     globeGroup.add(mesh);
   }
+
+  addVesselPaths = () => {};
+
+  removeVesselPaths = () => {};
+
+  addPorts = () => {};
+
+  addFlights = () => {};
 
   render() {
     return (

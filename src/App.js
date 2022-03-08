@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <Typography variant="h4">Port Intel </Typography>
+        <Typography variant="h5">Port Intel </Typography>
         <FiMenu/>
       </header>
       <Globe/>
