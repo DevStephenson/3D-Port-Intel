@@ -1,5 +1,8 @@
 .App {
   text-align: center;
+  background: radial-gradient(ellipse at top, #000000, transparent),
+            radial-gradient(ellipse at bottom, #555555, transparent), url('./assets/galaxy.png');;
+
 }
 
 
@@ -7,9 +10,9 @@
   background-color: #282c34;
   min-height: 50px;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 20px;
   align-items: center;
-  justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
 }
