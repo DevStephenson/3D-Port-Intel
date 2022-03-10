@@ -197,7 +197,7 @@ class Globe extends Component {
     //     camera.rotateX(-30)
 
     globeGroup.rotateY(-120);
-    globeGroup.rotateZ(-0.5);
+//     globeGroup.rotateZ(-0.5);
     scene = new THREE.Scene();
     //     alpha: true
 
@@ -407,7 +407,7 @@ class Globe extends Component {
       lng: 139.6503,
     };
 
-    let flight = [point1, point2, point3, point4];
+    let flights = [point1, point2, point3, point4];
 
     console.log("vesselData ==> ", vesselData);
 
@@ -424,6 +424,32 @@ class Globe extends Component {
       "#FFFFFF",
     ];
     let count = 0;
+    let flightcount = 0;
+    for (const flight of flights) {
+      var color = new THREE.Color("#ad1001"); // "FFA6A6" won't work!
+      color.getHex();
+
+      console.log('flight ==> ', flight)
+      let mesh = new THREE.Mesh(
+        new THREE.SphereBufferGeometry(0.01, 20, 20),
+        new THREE.MeshBasicMaterial({ color })
+        // this.material
+      );
+      let pos = this.calcPosFromLatLonRadN(flight.lat, flight.lng, globeRadius);
+//       mesh.position.set(pos.x, pos.z, pos.y);
+      // scene.add(mesh);
+//       scene.add(mesh);
+      if (flightcount < flights.length - 1) {
+        let pos1 = this.calcPosFromLatLonRadN(
+          flights[flightcount + 1].lat,
+          flights[flightcount + 1].lng,
+          globeRadius
+        );
+        this.getCurve(pos, pos1);
+      }
+
+      flightcount++;
+    }
 
     for (const port of vesselData) {
       //     const port = vesselData[i];
@@ -432,7 +458,7 @@ class Globe extends Component {
       const paths = JSON.parse(port.path);
       //       console.log("paths ==> ", paths);
 
-      //       if(count < 1){
+        //     if(count < 1){
       for (const path of paths) {
         var color = new THREE.Color(colorArray[count]); // "FFA6A6" won't work!
         color.getHex(); // 0xFFA6A6
@@ -447,7 +473,7 @@ class Globe extends Component {
         // scene.add(mesh);
         globeGroup.add(mesh);
       }
-      // }
+//       }
       //         let pos = this.calcPosFromLatLonRadN(
       //         flight[i].lat,
       //         flight[i].lng,
@@ -486,6 +512,9 @@ class Globe extends Component {
       let p = new THREE.Vector3().lerpVectors(v1, v2, i / 10);
       //       console.log("getCurve ==> ", p);
       p.normalize();
+
+
+        p.multiplyScalar(1 + 0.1 * Math.sin((Math.PI * i) / 10));
       //       p.multiplyScalar(1 + 0.41 * Math.sin((Math.PI * i) / 10));
       // p.multiplyScalar(1 + 0.1 * Math.sin((Math.PI * i) / 10));
       points.push(p);
@@ -511,29 +540,26 @@ class Globe extends Component {
     //       vertexShader: this.vertexShader(),
     //     });
 
-    const material = new THREE.RawShaderMaterial({
-      vertexShader: `
-        uniform mat4 projectionMatrix;
-        uniform mat4 viewMatrix;
-        uniform mat4 modelMatrix;
+//     const material = new THREE.ShaderMaterial({
+//       vertexShader: `
+//         uniform mat4 projectionMatrix;
+//         uniform mat4 viewMatrix;
+//         uniform mat4 modelMatrix;
         
-        attribute vec3 position;
-        attribute vec2 vUv;
+//         attribute vec3 position;
             
-        void main()
-        {
-            gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
-        }`,
-      fragmentShader: `
-        precision mediump float;
+//         void main()
+//         {
+//             gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+//         }`,
+//       fragmentShader: `
+//         precision mediump float;
+//         void main() {
+//                 gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+//         }`,
+//     });
 
-        uniform smapler2D globeTexture;
-
-        void main() {
-                gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-        }`,
-    });
-
+    const material = new THREE.MeshBasicMaterial({ color : 0xff0000 })
     const mesh = new THREE.Mesh(geometry, material);
     globeGroup.add(mesh);
   }
